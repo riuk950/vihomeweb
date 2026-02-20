@@ -20,15 +20,11 @@ jobs:
       - run: flutter build web --release
 
       # 3. Desplegar a Firebase Hosting
-      - name: Deploy to Firebase
+      - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
-          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" # Opcional: ver nota abajo
-          # Si usas el token clásico (FIREBASE_TOKEN):
-          # uses: w9jds/firebase-action@master
-          # with:
-          #   args: deploy --only hosting
-          # env:
-          #   FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          projectId: vihomewebflutter
+          # Asegúrate de que el nombre coincida con el que pusiste en GitHub
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_VIHOMEWEB }}"
+          projectId: vihomewebflutter # Reemplaza con tu ID real
+          channelId: live # Esto lo manda directo a producción
