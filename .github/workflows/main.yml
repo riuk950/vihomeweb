@@ -2,7 +2,7 @@ name: Deploy to Firebase Hosting
 on:
   push:
     branches:
-      - main # O el nombre de tu rama principal
+      - main
 
 jobs:
   build_and_deploy:
@@ -10,34 +10,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. Configurar Flutter
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: "stable"
 
-      # 2. Crear archivo .env desde secreto
+      # 1. Crear el archivo .env FÍSICO en el runner de GitHub
       - name: Create .env file
         run: |
-          cat > .env << 'EOF'
-          ${{ secrets.ENV_FILE }}
-          EOF
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
 
-      # 3. Instalar dependencias
-      - run: flutter pub get
+      # 2. Instalar dependencias (necesario para el build)
+      - name: Install dependencies
+        run: flutter pub get
 
-      # 4. Compilar para web pasando secretos como dart-define
-      - name: Build web with dart-define
-        run: |
-          flutter build web --release \
-            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      # 3. UN SOLO Build. Flutter incluirá el .env si está en assets
+      - name: Build Web
+        run: flutter build web --release
 
-      # 4. Desplegar a Firebase Hosting
+      # 4. Desplegar a Firebase
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
-          # Asegúrate de que el nombre coincida con el que pusiste en GitHub
           firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_VIHOMEWEB }}"
-          projectId: vihomewebflutter # Reemplaza con tu ID real
-          channelId: live # Esto lo manda directo a producción
+          projectId: vihomewebflutter
+          channelId: live
