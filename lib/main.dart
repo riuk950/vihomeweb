@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'features/login/data/repositories/auth_repository_impl.dart';
 import 'features/login/domain/usecases/login_usecase.dart';
 import 'features/login/presentation/cubit/login_cubit.dart';
@@ -10,15 +9,27 @@ import 'features/login/presentation/pages/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Cargar variables de entorno
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print('Info: .env file not found');
+  }
+
+  // Obtener URL y anon key desde .env
+  final supabaseUrl = dotenv.env['SUPABASE_URL'];
+  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+
+  if (supabaseUrl == null || supabaseAnonKey == null) {
+    throw Exception(
+      'Missing Supabase configuration. '
+      'Ensure .env file exists or window.env is set in index.html',
+    );
+  }
 
   // Inicializar Supabase
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
   runApp(const MyApp());
 }
