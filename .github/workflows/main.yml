@@ -1,9 +1,10 @@
 name: Deploy Flutter Web to Firebase
 
 on:
+  pull_request:
+    branches: ["main", "develop"]
   push:
-    branches:
-      - main  # Se ejecuta cuando haces push a la rama principal
+    branches: ["main", "develop"]
 
 jobs:
   build-and-deploy:
