@@ -22,9 +22,15 @@ jobs:
           ${{ secrets.ENV_FILE }}
           EOF
 
-      # 3. Instalar dependencias y compilar para web
+      # 3. Instalar dependencias
       - run: flutter pub get
-      - run: flutter build web --release
+
+      # 4. Compilar para web pasando secretos como dart-define
+      - name: Build web with dart-define
+        run: |
+          flutter build web --release \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
 
       # 4. Desplegar a Firebase Hosting
       - name: Deploy to Firebase Hosting

@@ -2,29 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'features/login/data/repositories/auth_repository_impl.dart';
-import 'features/login/domain/usecases/login_usecase.dart';
-import 'features/login/presentation/cubit/login_cubit.dart';
-import 'features/login/presentation/pages/login_page.dart';
+import 'package:vihomeweb/features/login/data/repositories/auth_repository_impl.dart';
+import 'package:vihomeweb/features/login/domain/usecases/login_usecase.dart';
+import 'package:vihomeweb/features/login/presentation/cubit/login_cubit.dart';
+import 'package:vihomeweb/features/login/presentation/pages/login_page.dart';
+
+// Leer valores pasados en tiempo de compilación (--dart-define)
+const String _supabaseUrlFromDefine = String.fromEnvironment('SUPABASE_URL');
+const String _supabaseAnonKeyFromDefine = String.fromEnvironment(
+  'SUPABASE_ANON_KEY',
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Cargar variables de entorno
+  // Cargar variables de entorno locales (para desarrollo)
   try {
     await dotenv.load(fileName: ".env");
-  } catch (e) {
-    print('Info: .env file not found');
-  }
+  } catch (_) {}
 
-  // Obtener URL y anon key desde .env
-  final supabaseUrl = dotenv.env['SUPABASE_URL'];
-  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+  // Priorizar variables pasadas en tiempo de compilación (--dart-define),
+  // si no están presentes, usar .env
+  final supabaseUrl = _supabaseUrlFromDefine.isNotEmpty
+      ? _supabaseUrlFromDefine
+      : dotenv.env['SUPABASE_URL'];
+  final supabaseAnonKey = _supabaseAnonKeyFromDefine.isNotEmpty
+      ? _supabaseAnonKeyFromDefine
+      : dotenv.env['SUPABASE_ANON_KEY'];
 
   if (supabaseUrl == null || supabaseAnonKey == null) {
     throw Exception(
-      'Missing Supabase configuration. '
-      'Ensure .env file exists or window.env is set in index.html',
+      'Missing Supabase configuration. Provide values via `--dart-define` '
+      'or add them to a local .env file.',
     );
   }
 
