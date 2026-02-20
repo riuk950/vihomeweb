@@ -31,6 +31,14 @@
 
   <title>vihomeweb</title>
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Inyectar variables de entorno global -->
+  <script>
+    window.env = {
+      SUPABASE_URL: '${SUPABASE_URL}',
+      SUPABASE_ANON_KEY: '${SUPABASE_ANON_KEY}'
+    };
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

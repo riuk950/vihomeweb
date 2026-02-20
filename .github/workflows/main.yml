@@ -4,7 +4,12 @@ on:
   pull_request:
     branches: ["main", "develop"]
   push:
+<<<<<<< HEAD
     branches: ["main", "develop"]
+=======
+    branches:
+      - main
+>>>>>>> main
 
 jobs:
   build-and-deploy:
@@ -14,11 +19,16 @@ jobs:
       - name: 📚 Checkout repository
         uses: actions/checkout@v4
 
+<<<<<<< HEAD
       - name: 🐦 Setup Flutter
+=======
+      - name: Setup Flutter
+>>>>>>> main
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
+<<<<<<< HEAD
       - name: 📦 Install dependencies
         run: flutter pub get
 
@@ -30,10 +40,27 @@ jobs:
         # Usamos dart-define para inyectar las variables en tiempo de compilación
 
       - name: 🚀 Deploy to Firebase Hosting
+=======
+      # 1. Crear el archivo .env FÍSICO en el runner de GitHub
+      - name: Create .env file
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
+
+      # 2. Instalar dependencias (necesario para el build)
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 3. UN SOLO Build. Flutter incluirá el .env si está en assets
+      - name: Build Web
+        run: flutter build web --release
+
+      # 4. Desplegar a Firebase
+      - name: Deploy to Firebase Hosting
+>>>>>>> main
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
-          # Asegúrate de que el nombre coincida con el que pusiste en GitHub
           firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_VIHOMEWEB }}"
-          projectId: vihomewebflutter # Reemplaza con tu ID real
-          channelId: live # Esto lo manda directo a producción
+          projectId: vihomewebflutter
+          channelId: live
