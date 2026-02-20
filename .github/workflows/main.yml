@@ -15,11 +15,18 @@ jobs:
         with:
           channel: "stable"
 
-      # 2. Instalar dependencias y compilar para web
+      # 2. Crear archivo .env desde secreto
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          ${{ secrets.ENV_FILE }}
+          EOF
+
+      # 3. Instalar dependencias y compilar para web
       - run: flutter pub get
       - run: flutter build web --release
 
-      # 3. Desplegar a Firebase Hosting
+      # 4. Desplegar a Firebase Hosting
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
