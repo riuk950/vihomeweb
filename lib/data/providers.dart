@@ -2,16 +2,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vihomeweb/domain/dashboard_item.dart';
 
+import 'package:vihomeweb/domain/models/proyecto.dart';
+
 final dashboardProvider = FutureProvider<List<DashboardItem>>((ref) async {
-  // In a real application, you would fetch this data from Supabase
-  await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
+  // En una aplicación real, obtendrías estos datos de Supabase
+  await Future.delayed(const Duration(seconds: 1)); // Simular retraso
   return [
-    DashboardItem(title: 'Users', value: '1,234'),
-    DashboardItem(title: 'Sales', value: '\$56,789'),
-    DashboardItem(title: 'Active Projects', value: '42'),
-    DashboardItem(title: 'Pending Tasks', value: '12'),
+    DashboardItem(title: 'Usuarios', value: '1,234'),
+    DashboardItem(title: 'Ventas', value: '\$56,789'),
+    DashboardItem(title: 'Proyectos Activos', value: '42'),
+    DashboardItem(title: 'Tareas Pendientes', value: '12'),
   ];
 });
+
+final proyectosProvider = FutureProvider<List<Proyecto>>((ref) async {
+  final supabase = Supabase.instance.client;
+  final response = await supabase
+      .from('proyectos')
+      .select()
+      .order('created_at');
+
+  return (response as List).map((json) => Proyecto.fromJson(json)).toList();
+});
+
 final authStateProvider = StreamProvider<AuthState>((ref) {
   return Supabase.instance.client.auth.onAuthStateChange;
 });

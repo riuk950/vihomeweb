@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -19,18 +20,38 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _signIn() async {
+  Future<void> _signUp() async {
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Las contraseñas no coinciden'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      await Supabase.instance.client.auth.signInWithPassword(
+      // Registro automático con el rol de constructora
+      await Supabase.instance.client.auth.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
+        data: {'role': 'constructora'},
       );
+
       if (mounted) {
-        context.go('/');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registro exitoso. Revisa tu email para confirmar.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.go('/login');
       }
     } on AuthException catch (error) {
       if (mounted) {
@@ -38,7 +59,6 @@ class _LoginScreenState extends State<LoginScreen> {
           SnackBar(
             content: Text(error.message),
             backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -48,7 +68,6 @@ class _LoginScreenState extends State<LoginScreen> {
           const SnackBar(
             content: Text('Ocurrió un error inesperado'),
             backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -67,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Gradient
+          // Background Gradient (igual que Login)
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -81,32 +100,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          // Animated decorative circles
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
-            ),
-          ),
-          // Main Content
           Center(
             child: SingleChildScrollView(
               child: Container(
@@ -126,7 +119,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Brand/Icon
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -134,28 +126,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.home_work_rounded,
+                        Icons.person_add_rounded,
                         size: 48,
                         color: theme.colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'Bienvenido de nuevo',
+                      'Crear Cuenta',
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 8),
                     Text(
-                      'Gestiona tus propiedades con Vihome',
+                      'Únete como Constructora',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 32),
-                    // Email Field
                     TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -165,18 +155,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: theme.colorScheme.outline.withValues(
-                              alpha: 0.5,
-                            ),
-                          ),
-                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Password Field
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -196,33 +177,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        enabledBorder: OutlineInputBorder(
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _confirmPasswordController,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: 'Confirmar Contraseña',
+                        prefixIcon: const Icon(Icons.lock_clock_outlined),
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: theme.colorScheme.outline.withValues(
-                              alpha: 0.5,
-                            ),
-                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          // TODO: Implement forgot password
-                        },
-                        child: const Text('¿Olvidaste tu contraseña?'),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Login Button
+                    const SizedBox(height: 32),
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _signIn,
+                        onPressed: _isLoading ? null : _signUp,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.colorScheme.primary,
                           foregroundColor: theme.colorScheme.onPrimary,
@@ -236,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 color: Colors.white,
                               )
                             : const Text(
-                                'Iniciar Sesión',
+                                'Registrarse',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -248,15 +222,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          '¿No tienes una cuenta?',
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+                        const Text('¿Ya tienes una cuenta?'),
                         TextButton(
-                          onPressed: () => context.go('/register'),
-                          child: const Text('Regístrate'),
+                          onPressed: () => context.go('/login'),
+                          child: const Text('Inicia Sesión'),
                         ),
                       ],
                     ),
