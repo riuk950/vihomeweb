@@ -110,6 +110,9 @@ class _ConstructoraFormDialogState
   final _direccionController = TextEditingController();
   final _telefonoController = TextEditingController();
   final _whatsappController = TextEditingController();
+  final _correoController = TextEditingController();
+  final _paginaWebController = TextEditingController();
+  final _logoController = TextEditingController();
   bool _isLoading = false;
 
   @override
@@ -121,6 +124,9 @@ class _ConstructoraFormDialogState
     _direccionController.dispose();
     _telefonoController.dispose();
     _whatsappController.dispose();
+    _correoController.dispose();
+    _paginaWebController.dispose();
+    _logoController.dispose();
     super.dispose();
   }
 
@@ -143,6 +149,9 @@ class _ConstructoraFormDialogState
         'telefono_fijo': _telefonoController.text.trim(),
         'whatsap': _whatsappController.text.trim(),
         'id_user': session.user.id,
+        'correo': _correoController.text.trim(),
+        'sitio_web': _paginaWebController.text.trim(),
+        'logo_url': _logoController.text.trim(),
       });
 
       ref.invalidate(constructorasProvider);
@@ -226,6 +235,33 @@ class _ConstructoraFormDialogState
                   decoration: const InputDecoration(
                     labelText: 'Dirección',
                     prefixIcon: Icon(Icons.home_work),
+                  ),
+                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _correoController,
+                  decoration: const InputDecoration(
+                    labelText: 'Correo',
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _paginaWebController,
+                  decoration: const InputDecoration(
+                    labelText: 'Página Web',
+                    prefixIcon: Icon(Icons.web),
+                  ),
+                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _logoController,
+                  decoration: const InputDecoration(
+                    labelText: 'Logo',
+                    prefixIcon: Icon(Icons.image),
                   ),
                   validator: (v) => v!.isEmpty ? 'Requerido' : null,
                 ),
