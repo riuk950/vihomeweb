@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vihomeweb/domain/dashboard_item.dart';
 
 import 'package:vihomeweb/domain/models/proyecto.dart';
+import 'package:vihomeweb/domain/models/constructora.dart';
 
 final dashboardProvider = FutureProvider<List<DashboardItem>>((ref) async {
   // En una aplicación real, obtendrías estos datos de Supabase
@@ -23,6 +24,20 @@ final proyectosProvider = FutureProvider<List<Proyecto>>((ref) async {
       .order('created_at');
 
   return (response as List).map((json) => Proyecto.fromJson(json)).toList();
+});
+
+final constructorasProvider = FutureProvider<List<Constructora>>((ref) async {
+  final session = ref.watch(sessionProvider);
+  if (session == null) return [];
+
+  final supabase = Supabase.instance.client;
+  final response = await supabase
+      .from('contructora')
+      .select()
+      .eq('id_user', session.user.id)
+      .order('nombre');
+
+  return (response as List).map((json) => Constructora.fromJson(json)).toList();
 });
 
 final authStateProvider = StreamProvider<AuthState>((ref) {

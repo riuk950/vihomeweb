@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vihomeweb/data/providers.dart';
 import 'package:vihomeweb/domain/models/proyecto.dart';
+import 'package:vihomeweb/presentation/screens/profile_screen.dart';
+import 'package:vihomeweb/presentation/screens/constructoras_screen.dart';
 import 'package:image_picker_web/image_picker_web.dart';
 import 'package:flutter/foundation.dart';
 
@@ -53,6 +55,16 @@ class DashboardScreen extends ConsumerWidget {
                 selectedIcon: Icon(Icons.business),
                 label: Text('Proyectos'),
               ),
+              NavigationRailDestination(
+                icon: Icon(Icons.foundation_outlined),
+                selectedIcon: Icon(Icons.foundation),
+                label: Text('Constructoras'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: Text('Perfil'),
+              ),
             ],
             trailing: Expanded(
               child: Align(
@@ -82,6 +94,10 @@ class DashboardScreen extends ConsumerWidget {
         return const DashboardView();
       case 1:
         return const ProyectosView();
+      case 2:
+        return const ConstructorasView();
+      case 3:
+        return const ProfileView();
       default:
         return const Center(child: Text('Vista no encontrada'));
     }
@@ -253,10 +269,41 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
   final _ubicacionController = TextEditingController();
   final _precioDesdeController = TextEditingController();
   final _precioHastaController = TextEditingController();
-  final _habitacionesController = TextEditingController(text: '3');
-  final _banosController = TextEditingController(text: '2');
-  final _areaController = TextEditingController(text: '70');
+  final _habitacionesController = TextEditingController();
+  final _banosController = TextEditingController();
+  final _areaController = TextEditingController();
   final _tipoPropiedadController = TextEditingController(text: 'Apartamento');
+  final _videoUrlController = TextEditingController();
+  final _latController = TextEditingController();
+  final _lngController = TextEditingController();
+  final _estadoController = TextEditingController(text: 'Sobre planos');
+  final _pisosController = TextEditingController();
+  final _estratoController = TextEditingController();
+  final _financiacionController = TextEditingController();
+  final _subsidioController = TextEditingController();
+  DateTime? _fechaFinalizacion;
+  String? _selectedConstructoraId;
+
+  final List<String> _amenidadesDisponibles = [
+    'Piscina',
+    'Gimnasio',
+    'Salón Social',
+    'Juegos Infantiles',
+    'Zona BBQ',
+    'Turco',
+    'Sauna',
+    'Cancha Múltiple',
+    'Coworking',
+    'Pet Friendly',
+    'Sendero Peatonal',
+    'Ascensor',
+    'Parqueadero',
+    'Shut de basuras',
+    'Portería',
+    'Circuito cerrado',
+    'Citofonía',
+  ];
+  final List<String> _amenidadesSeleccionadas = [];
 
   final List<Uint8List> _selectedImages = [];
   bool _isLoading = false;
@@ -268,6 +315,27 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
         _selectedImages.addAll(images);
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _descripcionController.dispose();
+    _ubicacionController.dispose();
+    _precioDesdeController.dispose();
+    _precioHastaController.dispose();
+    _habitacionesController.dispose();
+    _banosController.dispose();
+    _areaController.dispose();
+    _tipoPropiedadController.dispose();
+    _videoUrlController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
+    _estadoController.dispose();
+    _pisosController.dispose();
+    _estratoController.dispose();
+    _financiacionController.dispose();
+    _subsidioController.dispose();
+    super.dispose();
   }
 
   @override
@@ -283,6 +351,36 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Consumer(
+                  builder: (context, ref, child) {
+                    final constructorasAsync = ref.watch(constructorasProvider);
+                    return constructorasAsync.when(
+                      data: (constructoras) => DropdownButtonFormField<String>(
+                        initialValue: _selectedConstructoraId,
+                        decoration: const InputDecoration(
+                          labelText: 'Constructora',
+                          prefixIcon: Icon(Icons.business_center),
+                        ),
+                        items: constructoras
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c.id,
+                                child: Text(c.nombre),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => _selectedConstructoraId = v),
+                        validator: (v) =>
+                            v == null ? 'Selecciona una constructora' : null,
+                      ),
+                      loading: () => const LinearProgressIndicator(),
+                      error: (_, __) =>
+                          const Text('Error al cargar constructoras'),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _descripcionController,
                   decoration: const InputDecoration(labelText: 'Descripción'),
@@ -322,6 +420,42 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
                 Row(
                   children: [
                     Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _financiacionController.text,
+                        decoration: const InputDecoration(
+                          labelText: 'Aplica Financiación',
+                        ),
+                        items: [
+                          DropdownMenuItem(value: 'Sí', child: Text('Sí')),
+                          DropdownMenuItem(value: 'No', child: Text('No')),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _financiacionController.text = v!),
+                        validator: (v) => v == null ? 'Requerido' : null,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _subsidioController.text,
+                        decoration: const InputDecoration(
+                          labelText: 'Aplica Subsidio',
+                        ),
+                        items: [
+                          DropdownMenuItem(value: 'Sí', child: Text('Sí')),
+                          DropdownMenuItem(value: 'No', child: Text('No')),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _subsidioController.text = v!),
+                        validator: (v) => v == null ? 'Requerido' : null,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
                       child: TextFormField(
                         controller: _habitacionesController,
                         decoration: const InputDecoration(
@@ -335,6 +469,22 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
                       child: TextFormField(
                         controller: _banosController,
                         decoration: const InputDecoration(labelText: 'Baños'),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _pisosController,
+                        decoration: const InputDecoration(labelText: 'Pisos'),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _estratoController,
+                        decoration: const InputDecoration(labelText: 'Estrato'),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -360,6 +510,86 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
                       .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                       .toList(),
                   onChanged: (v) => _tipoPropiedadController.text = v!,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: _estadoController.text,
+                  decoration: const InputDecoration(
+                    labelText: 'Estado del Proyecto',
+                  ),
+                  items:
+                      ['Sobre planos', 'En construccion', 'Entrega inmediata']
+                          .map(
+                            (e) => DropdownMenuItem(value: e, child: Text(e)),
+                          )
+                          .toList(),
+                  onChanged: (v) => _estadoController.text = v!,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _videoUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'URL del Video (YouTube/Vimeo)',
+                    prefixIcon: Icon(Icons.video_library),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _latController,
+                        decoration: const InputDecoration(
+                          labelText: 'Latitud',
+                          prefixIcon: Icon(Icons.location_on),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _lngController,
+                        decoration: const InputDecoration(
+                          labelText: 'Longitud',
+                          prefixIcon: Icon(Icons.location_on),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Amenidades',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _amenidadesDisponibles.map((amenidad) {
+                    final isSelected = _amenidadesSeleccionadas.contains(
+                      amenidad,
+                    );
+                    return FilterChip(
+                      label: Text(amenidad),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _amenidadesSeleccionadas.add(amenidad);
+                          } else {
+                            _amenidadesSeleccionadas.remove(amenidad);
+                          }
+                        });
+                      },
+                      selectedColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      checkmarkColor: Theme.of(context).colorScheme.primary,
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -419,6 +649,39 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 24),
+                Text(
+                  'Detalles Temporales',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  title: Text(
+                    _fechaFinalizacion == null
+                        ? 'Seleccionar Fecha de Finalización'
+                        : 'Fecha de Finalización: ${_fechaFinalizacion!.day}/${_fechaFinalizacion!.month}/${_fechaFinalizacion!.year}',
+                  ),
+                  subtitle: const Text(
+                    'Fecha estimada de entrega del proyecto',
+                  ),
+                  trailing: const Icon(Icons.calendar_today),
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(color: Colors.grey.shade400),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      setState(() => _fechaFinalizacion = picked);
+                    }
+                  },
+                ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -480,11 +743,21 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
         'precio_hasta':
             double.tryParse(_precioHastaController.text) ?? 200000000,
         'tipo_propiedad': _tipoPropiedadController.text,
-        'estado': 'Sobre planos',
+        'estado': _estadoController.text,
         'habitaciones': int.tryParse(_habitacionesController.text) ?? 3,
         'baños': int.tryParse(_banosController.text) ?? 2,
         'area': double.tryParse(_areaController.text) ?? 70.0,
         'fotos': imageUrls,
+        'constructora_id': _selectedConstructoraId,
+        'video_url': _videoUrlController.text.trim(),
+        'lat': double.tryParse(_latController.text),
+        'lng': double.tryParse(_lngController.text),
+        'estrato': int.tryParse(_estratoController.text),
+        'cantidad_pisos': int.tryParse(_pisosController.text),
+        'amenidades': {'items': _amenidadesSeleccionadas},
+        'financiacion': _financiacionController.text == 'Sí',
+        'aplica_subsidio': _subsidioController.text == 'Sí',
+        'fecha_finalizacion': _fechaFinalizacion?.toIso8601String(),
       });
 
       ref.invalidate(proyectosProvider);

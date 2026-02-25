@@ -21,6 +21,7 @@ class Proyecto {
   final bool? aplicaSubsidio;
   final DateTime? fechaFinalizacion;
   final dynamic caracteristicas;
+  final Map<String, dynamic>? amenidades;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final List<String>? fotos;
@@ -48,6 +49,7 @@ class Proyecto {
     this.aplicaSubsidio,
     this.fechaFinalizacion,
     this.caracteristicas,
+    this.amenidades,
     this.createdAt,
     this.updatedAt,
     this.fotos,
@@ -79,6 +81,9 @@ class Proyecto {
           ? DateTime.parse(json['fecha_finalizacion'])
           : null,
       caracteristicas: json['caracteristicas'],
+      amenidades: json['amenidades'] != null
+          ? Map<String, dynamic>.from(json['amenidades'])
+          : null,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -111,6 +116,7 @@ class Proyecto {
       'cantidad_pisos': cantidadPisos,
       'aplica_subsidio': aplicaSubsidio,
       'fecha_finalizacion': fechaFinalizacion?.toIso8601String(),
+      'amenidades': amenidades,
     };
   }
 }
