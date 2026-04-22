@@ -7,6 +7,7 @@ import 'package:vihomeweb/presentation/screens/profile_screen.dart';
 import 'package:vihomeweb/presentation/screens/constructoras_screen.dart';
 import 'package:image_picker_web/image_picker_web.dart';
 import 'package:flutter/foundation.dart';
+import 'package:vihomeweb/core/responsive.dart';
 
 final selectedMenuIndexProvider = NotifierProvider<SelectedMenuNotifier, int>(
   SelectedMenuNotifier.new,
@@ -24,12 +25,64 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = ref.watch(selectedMenuIndexProvider);
+    final isMobile = Responsive.isMobile(context);
+
+    if (isMobile) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'VIHOME',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          actions: [
+            IconButton(
+              onPressed: () async {
+                await Supabase.instance.client.auth.signOut();
+              },
+              icon: const Icon(Icons.logout),
+            ),
+          ],
+        ),
+        body: _buildBody(context, ref, selectedIndex),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: (index) {
+            ref.read(selectedMenuIndexProvider.notifier).set(index);
+          },
+          destinations: const [
+            NavigationRequest(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard),
+              label: 'Dashboard',
+            ),
+            NavigationRequest(
+              icon: Icon(Icons.business_outlined),
+              selectedIcon: Icon(Icons.business),
+              label: 'Proyectos',
+            ),
+            NavigationRequest(
+              icon: Icon(Icons.foundation_outlined),
+              selectedIcon: Icon(Icons.foundation),
+              label: 'Constructoras',
+            ),
+            NavigationRequest(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Perfil',
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       body: Row(
         children: [
           NavigationRail(
-            extended: true,
+            extended: !Responsive.isTablet(context),
             selectedIndex: selectedIndex,
             onDestinationSelected: (index) {
               ref.read(selectedMenuIndexProvider.notifier).set(index);
@@ -104,22 +157,47 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
+class NavigationRequest extends StatelessWidget {
+  final Widget icon;
+  final Widget selectedIcon;
+  final String label;
+
+  const NavigationRequest({
+    super.key,
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return NavigationDestination(
+      icon: icon,
+      selectedIcon: selectedIcon,
+      label: label,
+    );
+  }
+}
+
 class DashboardView extends ConsumerWidget {
   const DashboardView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboardData = ref.watch(dashboardProvider);
+    final isMobile = Responsive.isMobile(context);
+    final isTablet = Responsive.isTablet(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Dashboard Overview')),
       body: dashboardData.when(
         data: (data) => GridView.builder(
           padding: const EdgeInsets.all(24.0),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: isMobile ? 1 : (isTablet ? 2 : 3),
             crossAxisSpacing: 24.0,
             mainAxisSpacing: 24.0,
-            childAspectRatio: 2.5,
+            childAspectRatio: isMobile ? 3 : 2.5,
           ),
           itemCount: data.length,
           itemBuilder: (context, index) {
@@ -167,18 +245,27 @@ class ProyectosView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final proyectosAsync = ref.watch(proyectosProvider);
+    final isMobile = Responsive.isMobile(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestión de Proyectos'),
+        title: Text(
+          isMobile ? 'Proyectos' : 'Gestión de Proyectos',
+          style: TextStyle(fontSize: isMobile ? 20 : 24),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: FilledButton.icon(
-              onPressed: () => _showProyectoForm(context, ref),
-              icon: const Icon(Icons.add),
-              label: const Text('Nuevo Proyecto'),
-            ),
+            child: isMobile
+                ? IconButton.filled(
+                    onPressed: () => _showProyectoForm(context, ref),
+                    icon: const Icon(Icons.add),
+                  )
+                : FilledButton.icon(
+                    onPressed: () => _showProyectoForm(context, ref),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nuevo Proyecto'),
+                  ),
           ),
         ],
       ),
@@ -188,9 +275,9 @@ class ProyectosView extends ConsumerWidget {
             return const Center(child: Text('No hay proyectos registrados.'));
           }
           return ListView.separated(
-            padding: const EdgeInsets.all(24.0),
+            padding: EdgeInsets.all(isMobile ? 12.0 : 24.0),
             itemCount: proyectos.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            separatorBuilder: (_, __) => SizedBox(height: isMobile ? 8 : 16),
             itemBuilder: (context, index) {
               final proyecto = proyectos[index];
               return Card(
@@ -200,23 +287,26 @@ class ProyectosView extends ConsumerWidget {
                   side: BorderSide(color: Colors.grey.shade200),
                 ),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
+                  contentPadding: EdgeInsets.all(isMobile ? 12 : 16),
                   leading: proyecto.fotos != null && proyecto.fotos!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
                             proyecto.fotos!.first,
-                            width: 60,
-                            height: 60,
+                            width: isMobile ? 50 : 60,
+                            height: isMobile ? 50 : 60,
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) =>
                                 const Icon(Icons.image_not_supported),
                           ),
                         )
-                      : const Icon(Icons.business, size: 40),
+                      : Icon(Icons.business, size: isMobile ? 32 : 40),
                   title: Text(
                     proyecto.descripcion ?? 'Sin descripción',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: isMobile ? 14 : 16,
+                    ),
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,16 +314,20 @@ class ProyectosView extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Ubicación: ${proyecto.ubicacionPrincipal ?? "N/A"}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: isMobile ? 12 : 14),
                       ),
                       Text(
                         'Precio: \$${proyecto.precioDesde} - \$${proyecto.precioHasta}',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
+                          fontSize: isMobile ? 12 : 14,
                         ),
                       ),
                     ],
                   ),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
                   onTap: () {
                     // Ver detalles del proyecto
                   },
@@ -340,10 +434,13 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final width = MediaQuery.sizeOf(context).width;
+
     return AlertDialog(
       title: const Text('Nuevo Proyecto'),
       content: SizedBox(
-        width: 600,
+        width: isMobile ? width * 0.9 : 600,
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
@@ -357,6 +454,7 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
                     return constructorasAsync.when(
                       data: (constructoras) => DropdownButtonFormField<String>(
                         initialValue: _selectedConstructoraId,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Constructora',
                           prefixIcon: Icon(Icons.business_center),
@@ -365,7 +463,10 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
                             .map(
                               (c) => DropdownMenuItem(
                                 value: c.id,
-                                child: Text(c.nombre),
+                                child: Text(
+                                  c.nombre,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             )
                             .toList(),
@@ -393,113 +494,194 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
                   validator: (v) => v!.isEmpty ? 'Requerido' : null,
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _precioDesdeController,
-                        decoration: const InputDecoration(
-                          labelText: 'Precio Desde',
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
+                if (isMobile) ...[
+                  TextFormField(
+                    controller: _precioDesdeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Precio Desde',
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _precioHastaController,
-                        decoration: const InputDecoration(
-                          labelText: 'Precio Hasta',
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _precioHastaController,
+                    decoration: const InputDecoration(
+                      labelText: 'Precio Hasta',
                     ),
-                  ],
-                ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ] else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _precioDesdeController,
+                          decoration: const InputDecoration(
+                            labelText: 'Precio Desde',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _precioHastaController,
+                          decoration: const InputDecoration(
+                            labelText: 'Precio Hasta',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _financiacionController.text,
-                        decoration: const InputDecoration(
-                          labelText: 'Aplica Financiación',
-                        ),
-                        items: [
-                          DropdownMenuItem(value: 'Sí', child: Text('Sí')),
-                          DropdownMenuItem(value: 'No', child: Text('No')),
-                        ],
-                        onChanged: (v) =>
-                            setState(() => _financiacionController.text = v!),
-                        validator: (v) => v == null ? 'Requerido' : null,
-                      ),
+                if (isMobile) ...[
+                  DropdownButtonFormField<String>(
+                    initialValue: _financiacionController.text,
+                    decoration: const InputDecoration(
+                      labelText: 'Aplica Financiación',
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _subsidioController.text,
-                        decoration: const InputDecoration(
-                          labelText: 'Aplica Subsidio',
-                        ),
-                        items: [
-                          DropdownMenuItem(value: 'Sí', child: Text('Sí')),
-                          DropdownMenuItem(value: 'No', child: Text('No')),
-                        ],
-                        onChanged: (v) =>
-                            setState(() => _subsidioController.text = v!),
-                        validator: (v) => v == null ? 'Requerido' : null,
-                      ),
+                    items: const [
+                      DropdownMenuItem(value: 'Sí', child: Text('Sí')),
+                      DropdownMenuItem(value: 'No', child: Text('No')),
+                    ],
+                    onChanged: (v) =>
+                        setState(() => _financiacionController.text = v!),
+                    validator: (v) => v == null ? 'Requerido' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _subsidioController.text,
+                    decoration: const InputDecoration(
+                      labelText: 'Aplica Subsidio',
                     ),
-                  ],
-                ),
+                    items: const [
+                      DropdownMenuItem(value: 'Sí', child: Text('Sí')),
+                      DropdownMenuItem(value: 'No', child: Text('No')),
+                    ],
+                    onChanged: (v) =>
+                        setState(() => _subsidioController.text = v!),
+                    validator: (v) => v == null ? 'Requerido' : null,
+                  ),
+                ] else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _financiacionController.text,
+                          decoration: const InputDecoration(
+                            labelText: 'Aplica Financiación',
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'Sí', child: Text('Sí')),
+                            DropdownMenuItem(value: 'No', child: Text('No')),
+                          ],
+                          onChanged: (v) =>
+                              setState(() => _financiacionController.text = v!),
+                          validator: (v) => v == null ? 'Requerido' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _subsidioController.text,
+                          decoration: const InputDecoration(
+                            labelText: 'Aplica Subsidio',
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'Sí', child: Text('Sí')),
+                            DropdownMenuItem(value: 'No', child: Text('No')),
+                          ],
+                          onChanged: (v) =>
+                              setState(() => _subsidioController.text = v!),
+                          validator: (v) => v == null ? 'Requerido' : null,
+                        ),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _habitacionesController,
-                        decoration: const InputDecoration(
-                          labelText: 'Habitaciones',
+                if (isMobile) ...[
+                  TextFormField(
+                    controller: _habitacionesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Habitaciones',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _banosController,
+                    decoration: const InputDecoration(labelText: 'Baños'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _pisosController,
+                    decoration: const InputDecoration(labelText: 'Pisos'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _estratoController,
+                    decoration: const InputDecoration(labelText: 'Estrato'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _areaController,
+                    decoration: const InputDecoration(labelText: 'Área (m²)'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ] else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _habitacionesController,
+                          decoration: const InputDecoration(
+                            labelText: 'Habitaciones',
+                          ),
+                          keyboardType: TextInputType.number,
                         ),
-                        keyboardType: TextInputType.number,
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _banosController,
-                        decoration: const InputDecoration(labelText: 'Baños'),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _pisosController,
-                        decoration: const InputDecoration(labelText: 'Pisos'),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _estratoController,
-                        decoration: const InputDecoration(labelText: 'Estrato'),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _areaController,
-                        decoration: const InputDecoration(
-                          labelText: 'Área (m²)',
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _banosController,
+                          decoration: const InputDecoration(labelText: 'Baños'),
+                          keyboardType: TextInputType.number,
                         ),
-                        keyboardType: TextInputType.number,
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _pisosController,
+                          decoration: const InputDecoration(labelText: 'Pisos'),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _estratoController,
+                          decoration: const InputDecoration(
+                            labelText: 'Estrato',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _areaController,
+                          decoration: const InputDecoration(
+                            labelText: 'Área (m²)',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   initialValue: _tipoPropiedadController.text,
@@ -534,31 +716,50 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _latController,
-                        decoration: const InputDecoration(
-                          labelText: 'Latitud',
-                          prefixIcon: Icon(Icons.location_on),
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
+                if (isMobile) ...[
+                  TextFormField(
+                    controller: _latController,
+                    decoration: const InputDecoration(
+                      labelText: 'Latitud',
+                      prefixIcon: Icon(Icons.location_on),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _lngController,
-                        decoration: const InputDecoration(
-                          labelText: 'Longitud',
-                          prefixIcon: Icon(Icons.location_on),
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _lngController,
+                    decoration: const InputDecoration(
+                      labelText: 'Longitud',
+                      prefixIcon: Icon(Icons.location_on),
                     ),
-                  ],
-                ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ] else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _latController,
+                          decoration: const InputDecoration(
+                            labelText: 'Latitud',
+                            prefixIcon: Icon(Icons.location_on),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _lngController,
+                          decoration: const InputDecoration(
+                            labelText: 'Longitud',
+                            prefixIcon: Icon(Icons.location_on),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 24),
                 Text(
                   'Amenidades',
@@ -665,6 +866,7 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
                     'Fecha estimada de entrega del proyecto',
                   ),
                   trailing: const Icon(Icons.calendar_today),
+                  contentPadding: isMobile ? const EdgeInsets.all(12) : null,
                   shape: RoundedRectangleBorder(
                     side: BorderSide(color: Colors.grey.shade400),
                     borderRadius: BorderRadius.circular(8),

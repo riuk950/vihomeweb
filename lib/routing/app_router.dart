@@ -4,6 +4,7 @@ import 'package:vihomeweb/data/providers.dart';
 import 'package:vihomeweb/presentation/screens/dashboard_screen.dart';
 import 'package:vihomeweb/presentation/screens/login_screen.dart';
 import 'package:vihomeweb/presentation/screens/register_screen.dart';
+import 'package:vihomeweb/presentation/screens/privacy_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final session = ref.watch(sessionProvider);
@@ -11,15 +12,16 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
-      final isAuthRoute =
+      final isPublicRoute =
           state.matchedLocation == '/login' ||
-          state.matchedLocation == '/register';
+          state.matchedLocation == '/register' ||
+          state.matchedLocation == '/privacy';
 
       if (session == null) {
-        return isAuthRoute ? null : '/login';
+        return isPublicRoute ? null : '/login';
       }
 
-      if (isAuthRoute) {
+      if (isPublicRoute && state.matchedLocation != '/privacy') {
         return '/';
       }
 
@@ -30,6 +32,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/privacy',
+        builder: (context, state) => const PrivacyScreen(),
       ),
       GoRoute(path: '/', builder: (context, state) => const DashboardScreen()),
     ],

@@ -2,13 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vihomeweb/data/providers.dart';
+import 'package:vihomeweb/core/responsive.dart';
 
-class ConstructorasView extends ConsumerWidget {
+class ConstructorasView extends StatelessWidget {
   const ConstructorasView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _ConstructorasViewContent();
+  }
+}
+
+class _ConstructorasViewContent extends ConsumerWidget {
+  const _ConstructorasViewContent();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final constructorasAsync = ref.watch(constructorasProvider);
+    final isMobile = Responsive.isMobile(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -16,11 +27,16 @@ class ConstructorasView extends ConsumerWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: FilledButton.icon(
-              onPressed: () => _showConstructoraForm(context, ref),
-              icon: const Icon(Icons.add),
-              label: const Text('Nueva Constructora'),
-            ),
+            child: isMobile
+                ? IconButton.filled(
+                    onPressed: () => _showConstructoraForm(context, ref),
+                    icon: const Icon(Icons.add),
+                  )
+                : FilledButton.icon(
+                    onPressed: () => _showConstructoraForm(context, ref),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nueva Constructora'),
+                  ),
           ),
         ],
       ),
@@ -32,7 +48,7 @@ class ConstructorasView extends ConsumerWidget {
             );
           }
           return ListView.separated(
-            padding: const EdgeInsets.all(24.0),
+            padding: EdgeInsets.all(isMobile ? 12.0 : 24.0),
             itemCount: constructoras.length,
             separatorBuilder: (_, __) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
@@ -44,7 +60,7 @@ class ConstructorasView extends ConsumerWidget {
                   side: BorderSide(color: Colors.grey.shade200),
                 ),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.all(20),
+                  contentPadding: EdgeInsets.all(isMobile ? 12 : 20),
                   leading: CircleAvatar(
                     backgroundColor: Theme.of(
                       context,
@@ -53,9 +69,9 @@ class ConstructorasView extends ConsumerWidget {
                   ),
                   title: Text(
                     constructora.nombre,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: isMobile ? 16 : 18,
                     ),
                   ),
                   subtitle: Column(
@@ -175,10 +191,13 @@ class _ConstructoraFormDialogState
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final width = MediaQuery.sizeOf(context).width;
+
     return AlertDialog(
       title: const Text('Nueva Constructora'),
       content: SizedBox(
-        width: 600,
+        width: isMobile ? width * 0.9 : 600,
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
@@ -204,31 +223,50 @@ class _ConstructoraFormDialogState
                   validator: (v) => v!.isEmpty ? 'El NIT es requerido' : null,
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _departamentoController,
-                        decoration: const InputDecoration(
-                          labelText: 'Departamento',
-                          prefixIcon: Icon(Icons.map),
-                        ),
-                        validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                      ),
+                if (isMobile) ...[
+                  TextFormField(
+                    controller: _departamentoController,
+                    decoration: const InputDecoration(
+                      labelText: 'Departamento',
+                      prefixIcon: Icon(Icons.map),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _ciudadController,
-                        decoration: const InputDecoration(
-                          labelText: 'Ciudad',
-                          prefixIcon: Icon(Icons.location_city),
-                        ),
-                        validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                      ),
+                    validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _ciudadController,
+                    decoration: const InputDecoration(
+                      labelText: 'Ciudad',
+                      prefixIcon: Icon(Icons.location_city),
                     ),
-                  ],
-                ),
+                    validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                  ),
+                ] else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _departamentoController,
+                          decoration: const InputDecoration(
+                            labelText: 'Departamento',
+                            prefixIcon: Icon(Icons.map),
+                          ),
+                          validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _ciudadController,
+                          decoration: const InputDecoration(
+                            labelText: 'Ciudad',
+                            prefixIcon: Icon(Icons.location_city),
+                          ),
+                          validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                        ),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _direccionController,
@@ -266,30 +304,48 @@ class _ConstructoraFormDialogState
                   validator: (v) => v!.isEmpty ? 'Requerido' : null,
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _telefonoController,
-                        decoration: const InputDecoration(
-                          labelText: 'Teléfono Fijo',
-                          prefixIcon: Icon(Icons.phone),
+                if (isMobile) ...[
+                  TextFormField(
+                    controller: _telefonoController,
+                    decoration: const InputDecoration(
+                      labelText: 'Teléfono Fijo',
+                      prefixIcon: Icon(Icons.phone),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _whatsappController,
+                    decoration: const InputDecoration(
+                      labelText: 'WhatsApp',
+                      prefixIcon: Icon(Icons.chat),
+                    ),
+                    validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                  ),
+                ] else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _telefonoController,
+                          decoration: const InputDecoration(
+                            labelText: 'Teléfono Fijo',
+                            prefixIcon: Icon(Icons.phone),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _whatsappController,
-                        decoration: const InputDecoration(
-                          labelText: 'WhatsApp',
-                          prefixIcon: Icon(Icons.chat),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _whatsappController,
+                          decoration: const InputDecoration(
+                            labelText: 'WhatsApp',
+                            prefixIcon: Icon(Icons.chat),
+                          ),
+                          validator: (v) => v!.isEmpty ? 'Requerido' : null,
                         ),
-                        validator: (v) => v!.isEmpty ? 'Requerido' : null,
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
               ],
             ),
           ),

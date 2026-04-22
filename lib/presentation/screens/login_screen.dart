@@ -260,6 +260,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () => context.go('/privacy'),
+                      child: Text(
+                        'Política de Privacidad',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.7,
+                          ),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

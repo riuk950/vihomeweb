@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vihomeweb/data/providers.dart';
+import 'package:vihomeweb/core/responsive.dart';
 
 class ProfileView extends ConsumerWidget {
   const ProfileView({super.key});
@@ -10,6 +11,7 @@ class ProfileView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
     final user = session?.user;
+    final isMobile = Responsive.isMobile(context);
 
     if (user == null) {
       return const Center(child: Text('No se ha iniciado sesión'));
@@ -32,18 +34,18 @@ class ProfileView extends ConsumerWidget {
         foregroundColor: Colors.black,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32.0),
+        padding: EdgeInsets.all(isMobile ? 16.0 : 32.0),
         child: Center(
           child: Container(
             constraints: const BoxConstraints(maxWidth: 800),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _buildProfileHeader(context, name, email),
-                const SizedBox(height: 40),
-                _buildInfoSection(context, user, role, lastSignIn),
-                const SizedBox(height: 40),
-                _buildSecuritySection(context),
+                _buildProfileHeader(context, name, email, isMobile),
+                SizedBox(height: isMobile ? 24 : 40),
+                _buildInfoSection(context, user, role, lastSignIn, isMobile),
+                SizedBox(height: isMobile ? 24 : 40),
+                _buildSecuritySection(context, isMobile),
               ],
             ),
           ),
@@ -52,7 +54,12 @@ class ProfileView extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, String name, String email) {
+  Widget _buildProfileHeader(
+    BuildContext context,
+    String name,
+    String email,
+    bool isMobile,
+  ) {
     return Column(
       children: [
         Stack(
@@ -67,10 +74,14 @@ class ProfileView extends ConsumerWidget {
                   width: 4,
                 ),
               ),
-              child: const CircleAvatar(
-                radius: 60,
+              child: CircleAvatar(
+                radius: isMobile ? 50 : 60,
                 backgroundColor: Colors.white,
-                child: Icon(Icons.person, size: 60, color: Colors.grey),
+                child: Icon(
+                  Icons.person,
+                  size: isMobile ? 50 : 60,
+                  color: Colors.grey,
+                ),
               ),
             ),
             Positioned(
@@ -94,9 +105,10 @@ class ProfileView extends ConsumerWidget {
         const SizedBox(height: 24),
         Text(
           name,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: isMobile ? 24 : 32,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -128,6 +140,7 @@ class ProfileView extends ConsumerWidget {
     User user,
     String role,
     String lastSignIn,
+    bool isMobile,
   ) {
     return Card(
       elevation: 0,
@@ -136,15 +149,16 @@ class ProfileView extends ConsumerWidget {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: EdgeInsets.all(isMobile ? 16.0 : 32.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Información de la Cuenta',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: isMobile ? 18 : 22,
+              ),
             ),
             const SizedBox(height: 24),
             _buildInfoRow(
@@ -159,6 +173,7 @@ class ProfileView extends ConsumerWidget {
               Icons.badge_outlined,
               'ID de Usuario',
               user.id,
+              isMobile: isMobile,
             ),
             const Divider(height: 32),
             _buildInfoRow(
@@ -189,6 +204,7 @@ class ProfileView extends ConsumerWidget {
     String label,
     String value, {
     Color? color,
+    bool isMobile = false,
   }) {
     return Row(
       children: [
@@ -207,31 +223,35 @@ class ProfileView extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
+              const SizedBox(height: 4),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildSecuritySection(BuildContext context) {
+  Widget _buildSecuritySection(BuildContext context, bool isMobile) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -241,8 +261,8 @@ class ProfileView extends ConsumerWidget {
       child: Column(
         children: [
           ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 32,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 16 : 32,
               vertical: 12,
             ),
             leading: const Icon(Icons.lock_reset_outlined),
@@ -257,8 +277,8 @@ class ProfileView extends ConsumerWidget {
           ),
           const Divider(height: 1),
           ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 32,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 16 : 32,
               vertical: 12,
             ),
             leading: const Icon(Icons.logout_outlined, color: Colors.red),
