@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:vihomeweb/core/theme/app_theme.dart';
 import 'package:vihomeweb/routing/app_router.dart';
 
 import 'package:vihomeweb/core/config/env.dart';
@@ -27,18 +28,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Vihome Web',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.grey.withValues(alpha: 0.05),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
+      theme: AppTheme.lightTheme,
       routerConfig: router,
     );
   }

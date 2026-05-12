@@ -133,10 +133,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: theme.colorScheme.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        Icons.home_work_rounded,
-                        size: 48,
-                        color: theme.colorScheme.primary,
+                      child: CircleAvatar(
+                        backgroundImage: Image.asset(
+                          'assets/images/vihome.png',
+                        ).image,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -149,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Gestiona tus propiedades con Vihome',
+                      'Gestiona tus proyectos con Vihome',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

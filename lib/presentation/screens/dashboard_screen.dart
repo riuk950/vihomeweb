@@ -89,12 +89,11 @@ class DashboardScreen extends ConsumerWidget {
             },
             leading: Padding(
               padding: const EdgeInsets.symmetric(vertical: 24.0),
-              child: Text(
-                'VIHOME',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              child: CircleAvatar(
+                backgroundImage: Image.asset(
+                  'assets/images/vihome.png',
+                  height: 50,
+                ).image,
               ),
             ),
             destinations: const [

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class PrivacyScreen extends StatelessWidget {
   const PrivacyScreen({super.key});
@@ -77,13 +76,6 @@ class PrivacyScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(24.0),
                       child: Row(
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: () => context.canPop()
-                                ? context.pop()
-                                : context.go('/login'),
-                          ),
-                          const SizedBox(width: 16),
                           Expanded(
                             child: Text(
                               'Política de Privacidad',
