@@ -73,24 +73,6 @@ class FaqScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    // Header
-                    Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Preguntas Frecuentes',
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
                     // Content
                     Expanded(
                       child: FutureBuilder<String>(
