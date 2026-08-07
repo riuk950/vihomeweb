@@ -10,12 +10,49 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (!Env.isConfigured) {
-    debugPrint('Warning: Supabase environment variables are not configured.');
+    runApp(const _UnconfiguredApp());
+    return;
   }
 
   await Supabase.initialize(url: Env.supabaseUrl, anonKey: Env.supabaseAnonKey);
 
   runApp(const ProviderScope(child: MyApp()));
+}
+
+class _UnconfiguredApp extends StatelessWidget {
+  const _UnconfiguredApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
+                const SizedBox(height: 16),
+                const Text(
+                  'Aplicación mal configurada',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Las variables de entorno de Supabase no están definidas. '
+                  'Compila con --dart-define=SUPABASE_URL y --dart-define=SUPABASE_ANON_KEY.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class MyApp extends ConsumerWidget {
