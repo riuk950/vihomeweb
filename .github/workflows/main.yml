@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Guard: .env must not be committed
+      - name: .env must not be committed
         run: |
           if [ -f .env ]; then
             echo "::error::El archivo .env contiene secretos y no debe estar en el repositorio."
