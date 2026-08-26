@@ -33,6 +33,23 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <script>
+    // Fix URL issues before Flutter loads
+    (function() {
+      var changed = false;
+      var path = window.location.pathname;
+
+      // Fix double path: /update-password/update-password → /update-password
+      if (path.indexOf('/update-password/update-password') === 0) {
+        path = '/update-password' + path.substring('/update-password/update-password'.length);
+        changed = true;
+      }
+
+      if (changed) {
+        window.history.replaceState(null, '', path + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

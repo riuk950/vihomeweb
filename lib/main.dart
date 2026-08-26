@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vihomeweb/core/theme/app_theme.dart';
 import 'package:vihomeweb/routing/app_router.dart';
@@ -7,16 +10,28 @@ import 'package:vihomeweb/routing/app_router.dart';
 import 'package:vihomeweb/core/config/env.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy();
 
-  if (!Env.isConfigured) {
-    runApp(const _UnconfiguredApp());
-    return;
-  }
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(url: Env.supabaseUrl, anonKey: Env.supabaseAnonKey);
+    if (!Env.isConfigured) {
+      runApp(const _UnconfiguredApp());
+      return;
+    }
 
-  runApp(const ProviderScope(child: MyApp()));
+    await Supabase.initialize(
+      url: Env.supabaseUrl,
+      anonKey: Env.supabaseAnonKey,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.implicit,
+      ),
+    );
+
+    runApp(const ProviderScope(child: MyApp()));
+  }, (error, stackTrace) {
+    debugPrint('Uncaught error: $error');
+  });
 }
 
 class _UnconfiguredApp extends StatelessWidget {
