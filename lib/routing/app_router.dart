@@ -1,56 +1,95 @@
-import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:web/web.dart' as web;
+import 'package:vihomeweb/data/providers/auth_providers.dart';
+import 'package:vihomeweb/routing/web_url_cleaner.dart';
+import 'package:vihomeweb/domain/models/user_role.dart';
+import 'package:vihomeweb/presentation/controllers/auth_state.dart';
 import 'package:vihomeweb/presentation/screens/dashboard_screen.dart';
-import 'package:vihomeweb/presentation/screens/login_screen.dart';
-import 'package:vihomeweb/presentation/screens/register_screen.dart';
-import 'package:vihomeweb/presentation/screens/forgot_password_screen.dart';
-import 'package:vihomeweb/presentation/screens/update_password_screen.dart';
-import 'package:vihomeweb/presentation/screens/privacy_screen.dart';
 import 'package:vihomeweb/presentation/screens/faq_screen.dart';
+import 'package:vihomeweb/presentation/screens/forgot_password_screen.dart';
+import 'package:vihomeweb/presentation/screens/login_screen.dart';
+import 'package:vihomeweb/presentation/screens/privacy_screen.dart';
+import 'package:vihomeweb/presentation/screens/register_screen.dart';
+import 'package:vihomeweb/presentation/screens/splash_loading_screen.dart';
 import 'package:vihomeweb/presentation/screens/terms_screen.dart';
+import 'package:vihomeweb/presentation/screens/update_password_screen.dart';
 
+/// Lógica pura de evaluación de redirección de rutas y guards de acceso.
+String? authRedirectLogic({
+  required AuthState authState,
+  required String path,
+}) {
+  final isPublicRoute =
+      path == '/login' ||
+      path == '/register' ||
+      path == '/forgot-password' ||
+      path == '/update-password' ||
+      path == '/privacy' ||
+      path == '/faq' ||
+      path == '/terms';
+
+  // 1. Estados iniciales de carga o validación de rol
+  if (authState is AuthInitial || authState is AuthEvaluatingRole) {
+    return isPublicRoute ? null : '/splash';
+  }
+
+  // 2. Estados no autenticados o con error
+  if (authState is Unauthenticated || authState is AuthErrorState) {
+    if (path == '/splash') return '/login';
+    return isPublicRoute ? null : '/login';
+  }
+
+  // 3. Usuario autenticado y autorizado
+  if (authState is Authenticated) {
+    final perfil = authState.perfil;
+    final defaultDashboard =
+        perfil.rol == UserRole.admin ? '/admin-panel' : '/dashboard-empresa';
+
+    // Redirigir fuera de rutas de inicio o neutrales
+    if (path == '/login' ||
+        path == '/register' ||
+        path == '/splash' ||
+        path == '/') {
+      return defaultDashboard;
+    }
+
+    // Proteger panel exclusivo de admin
+    if (path == '/admin-panel' && perfil.rol != UserRole.admin) {
+      return '/dashboard-empresa';
+    }
+
+    return null;
+  }
+
+  return null;
+}
+
+/// Provider que expone la instancia configurada de [GoRouter].
 final routerProvider = Provider<GoRouter>((ref) {
-  final notifier = _AuthNotifier();
-  ref.onDispose(() => notifier.dispose());
+  final refreshNotifier = _AuthRouterNotifier(ref);
+  ref.onDispose(refreshNotifier.dispose);
 
   return GoRouter(
-    initialLocation: '/login',
-    refreshListenable: notifier,
+    initialLocation: '/splash',
+    refreshListenable: refreshNotifier,
     redirect: (context, state) {
-      final path = state.matchedLocation;
-      final session = Supabase.instance.client.auth.currentSession;
-
-      final isPublicRoute =
-          path == '/login' ||
-          path == '/register' ||
-          path == '/forgot-password' ||
-          path == '/update-password' ||
-          path == '/privacy' ||
-          path == '/faq' ||
-          path == '/terms';
-
-      if (session == null) {
-        return isPublicRoute ? null : '/login';
-      }
-
-      if (isPublicRoute &&
-          path != '/privacy' &&
-          path != '/faq' &&
-          path != '/terms' &&
-          path != '/forgot-password' &&
-          path != '/update-password') {
-        return '/';
-      }
-
-      return null;
+      final authState = ref.read(authControllerProvider);
+      return authRedirectLogic(
+        authState: authState,
+        path: state.matchedLocation,
+      );
     },
     routes: [
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashLoadingScreen(),
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
@@ -67,55 +106,47 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/privacy',
         builder: (context, state) => const PrivacyScreen(),
       ),
-      GoRoute(path: '/faq', builder: (context, state) => const FaqScreen()),
-      GoRoute(path: '/terms', builder: (context, state) => const TermsScreen()),
-      GoRoute(path: '/', builder: (context, state) => const DashboardScreen()),
+      GoRoute(
+        path: '/faq',
+        builder: (context, state) => const FaqScreen(),
+      ),
+      GoRoute(
+        path: '/terms',
+        builder: (context, state) => const TermsScreen(),
+      ),
+      GoRoute(
+        path: '/dashboard-empresa',
+        builder: (context, state) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/admin-panel',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Panel de Administración'),
+            backgroundColor: const Color(0xFF003760),
+            foregroundColor: Colors.white,
+          ),
+          body: const Center(
+            child: Text(
+              'Panel de Administración - Vihome',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const DashboardScreen(),
+      ),
     ],
   );
 });
 
-class _AuthNotifier extends ChangeNotifier {
-  _AuthNotifier() {
-    _sub = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
-      _fixUrlIfNeeded();
+class _AuthRouterNotifier extends ChangeNotifier {
+  _AuthRouterNotifier(Ref ref) {
+    ref.listen<AuthState>(authControllerProvider, (_, __) {
       notifyListeners();
     });
-  }
-
-  late final StreamSubscription<AuthState> _sub;
-
-  void _fixUrlIfNeeded() {
-    var fixed = false;
-    var url = web.window.location.href;
-
-    final path = web.window.location.pathname;
-    if (path.contains('/update-password/update-password')) {
-      url = url.replaceFirst(
-        '/update-password/update-password',
-        '/update-password',
-      );
-      fixed = true;
-    }
-
-    final uri = Uri.parse(url);
-    if (uri.queryParameters.containsKey('code')) {
-      final cleanParams = Map<String, String>.from(uri.queryParameters)
-        ..remove('code');
-      final cleanQuery = cleanParams.isEmpty
-          ? ''
-          : '?${Uri(queryParameters: cleanParams).query}';
-      url = '${uri.path}$cleanQuery${uri.fragment}';
-      fixed = true;
-    }
-
-    if (fixed) {
-      web.window.history.replaceState(null, '', url);
-    }
-  }
-
-  @override
-  void dispose() {
-    _sub.cancel();
-    super.dispose();
+    cleanAuthUrlParams();
   }
 }

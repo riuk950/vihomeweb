@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:web/web.dart' as web;
+import 'package:vihomeweb/core/utils/deep_link_launcher.dart';
 
 class UpdatePasswordScreen extends StatefulWidget {
   const UpdatePasswordScreen({super.key});
@@ -105,12 +105,7 @@ class _UpdatePasswordScreenState extends State<UpdatePasswordScreen> {
     final href =
         'vihomeapp://update-password?refresh_token=$refreshToken&access_token=$accessToken';
 
-    final link = web.HTMLAnchorElement()
-      ..href = href
-      ..style.display = 'none';
-    web.document.body?.append(link);
-    link.click();
-    link.remove();
+    launchDeepLink(href);
 
     setState(() => _appOpened = true);
   }

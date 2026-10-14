@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vihomeweb/core/theme/app_theme.dart';
 import 'package:vihomeweb/data/providers.dart';
+import 'package:vihomeweb/data/providers/auth_providers.dart';
 import 'package:vihomeweb/domain/dashboard_item.dart';
 import 'package:vihomeweb/domain/models/proyecto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:vihomeweb/presentation/screens/profile_screen.dart';
 import 'package:vihomeweb/presentation/screens/constructoras_screen.dart';
-import 'package:image_picker_web/image_picker_web.dart';
-import 'package:flutter/foundation.dart';
+import 'package:vihomeweb/core/utils/image_picker_helper.dart';
 import 'package:vihomeweb/core/responsive.dart';
 
 final selectedMenuIndexProvider = NotifierProvider<SelectedMenuNotifier, int>(
@@ -50,7 +51,7 @@ class DashboardScreen extends ConsumerWidget {
           actions: [
             IconButton(
               onPressed: () async {
-                await Supabase.instance.client.auth.signOut();
+                await ref.read(authControllerProvider.notifier).logout();
               },
               icon: const Icon(Icons.logout),
             ),
@@ -100,7 +101,7 @@ class DashboardScreen extends ConsumerWidget {
             },
             onNewProject: () => _openNewProject(context, ref),
             onLogout: () async {
-              await Supabase.instance.client.auth.signOut();
+              await ref.read(authControllerProvider.notifier).logout();
             },
           ),
           const VerticalDivider(thickness: 1, width: 1),
@@ -195,26 +196,28 @@ class _DashboardSidebar extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'VIHOME',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: azurePrimary,
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'VIHOME',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: azurePrimary,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Enterprise Portal',
-                        style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 0.5,
-                          color: azureOnSurfaceVariant,
+                        Text(
+                          'Enterprise Portal',
+                          style: TextStyle(
+                            fontSize: 12,
+                            letterSpacing: 0.5,
+                            color: azureOnSurfaceVariant,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -311,12 +314,16 @@ class _SidebarItem extends StatelessWidget {
                       : azureOnSurfaceVariant,
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: selected ? azureOnSecondaryContainer : azureOnSurface,
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: selected ? azureOnSecondaryContainer : azureOnSurface,
+                    ),
                   ),
                 ),
               ],
@@ -660,29 +667,35 @@ class _HighlightCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.value,
-                          style: const TextStyle(
-                            fontSize: 48,
-                            height: 1,
-                            fontWeight: FontWeight.w400,
-                            color: azureOnPrimaryContainer,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              item.value,
+                              style: const TextStyle(
+                                fontSize: 48,
+                                height: 1,
+                                fontWeight: FontWeight.w400,
+                                color: azureOnPrimaryContainer,
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '+2.4% vs trimestre anterior',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: azureOnPrimaryContainer.withValues(alpha: 0.8),
+                          const SizedBox(height: 8),
+                          Text(
+                            '+2.4% vs trimestre anterior',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: azureOnPrimaryContainer.withValues(alpha: 0.8),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 16),
                     if (!isMobile)
                       FilledButton(
                         onPressed: () {
@@ -1686,7 +1699,7 @@ class _ProyectoFormDialogState extends ConsumerState<ProyectoFormDialog> {
   bool _isLoading = false;
 
   Future<void> _pickImages() async {
-    final images = await ImagePickerWeb.getMultiImagesAsBytes();
+    final images = await pickMultiImagesAsBytes();
     if (images != null) {
       setState(() {
         _selectedImages.addAll(images);
