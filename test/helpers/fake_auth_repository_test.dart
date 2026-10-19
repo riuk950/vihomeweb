@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vihomeweb/core/errors/auth_failure.dart';
+import 'package:vihomeweb/domain/models/constructora_data.dart';
 import 'package:vihomeweb/domain/models/perfil_usuario.dart';
 import 'package:vihomeweb/domain/models/user_role.dart';
 import 'fake_auth_repository.dart';
@@ -83,6 +84,56 @@ void main() {
       await repository.signOut();
       expect(await repository.getCurrentProfile(), isNull);
       expect(repository.signOutCallCount, equals(1));
+    });
+
+    test('completarOnboardingConstructora actualiza isCompleted a true en el usuario actual', () async {
+      final initialUser = PerfilUsuario(
+        id: 'usr-1',
+        email: 'test@empresa.com',
+        rol: UserRole.constructora,
+        activo: true,
+        isCompleted: false,
+      );
+      repository.emitUser(initialUser);
+
+      final data = const ConstructoraData(
+        nit: '900123456-1',
+        nombre: 'Constructora Bolívar SAS',
+        telefono: '6012345678',
+        direccion: 'Calle 100 # 15-20',
+      );
+
+      final result = await repository.completarOnboardingConstructora(data);
+
+      expect(result.isCompleted, isTrue);
+      final updated = await repository.getCurrentProfile();
+      expect(updated, isNotNull);
+      expect(updated!.isCompleted, isTrue);
+      expect(repository.completarOnboardingCallCount, equals(1));
+      expect(repository.lastConstructoraData, equals(data));
+    });
+
+    test('completarOnboardingConstructora lanza error configurado si failureToThrow existe', () async {
+      repository.failureToThrow = const ConstructoraAlreadyExistsFailure();
+
+      final data = const ConstructoraData(
+        nit: '900123456-1',
+        nombre: 'Constructora Repetida',
+        telefono: '6012345678',
+        direccion: 'Calle 100 # 15-20',
+      );
+
+      expect(
+        () => repository.completarOnboardingConstructora(data),
+        throwsA(isA<ConstructoraAlreadyExistsFailure>()),
+      );
+    });
+
+    test('reenviarCorreoConfirmacion incrementa contador y guarda último correo', () async {
+      await repository.reenviarCorreoConfirmacion('pending@empresa.com');
+
+      expect(repository.resendEmailCallCount, equals(1));
+      expect(repository.lastResentEmail, equals('pending@empresa.com'));
     });
   });
 }

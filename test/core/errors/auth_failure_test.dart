@@ -28,6 +28,14 @@ void main() {
         const UnexpectedAuthFailure().message,
         equals('Ocurrió un error inesperado al procesar la solicitud.'),
       );
+      expect(
+        const EmailNotConfirmedFailure().message,
+        equals('Debes confirmar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada o carpeta de spam.'),
+      );
+      expect(
+        const ConstructoraAlreadyExistsFailure().message,
+        equals('Ya existe una constructora registrada con este NIT.'),
+      );
     });
 
     test('debe permitir mensajes personalizados', () {

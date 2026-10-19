@@ -6,6 +6,7 @@ import 'package:vihomeweb/data/providers/auth_providers.dart';
 import 'package:vihomeweb/routing/web_url_cleaner.dart';
 import 'package:vihomeweb/domain/models/user_role.dart';
 import 'package:vihomeweb/presentation/controllers/auth_state.dart';
+import 'package:vihomeweb/presentation/screens/complete_profile_screen.dart';
 import 'package:vihomeweb/presentation/screens/dashboard_screen.dart';
 import 'package:vihomeweb/presentation/screens/faq_screen.dart';
 import 'package:vihomeweb/presentation/screens/forgot_password_screen.dart';
@@ -32,32 +33,48 @@ String? authRedirectLogic({
 
   // 1. Estados iniciales de carga o validación de rol
   if (authState is AuthInitial || authState is AuthEvaluatingRole) {
+    if (path == '/splash') return null;
     return isPublicRoute ? null : '/splash';
   }
 
   // 2. Estados no autenticados o con error
   if (authState is Unauthenticated || authState is AuthErrorState) {
-    if (path == '/splash') return '/login';
+    if (path == '/splash' || path == '/complete-profile') return '/login';
     return isPublicRoute ? null : '/login';
   }
 
   // 3. Usuario autenticado y autorizado
   if (authState is Authenticated) {
     final perfil = authState.perfil;
-    final defaultDashboard =
-        perfil.rol == UserRole.admin ? '/admin-panel' : '/dashboard-empresa';
 
-    // Redirigir fuera de rutas de inicio o neutrales
-    if (path == '/login' ||
-        path == '/register' ||
-        path == '/splash' ||
-        path == '/') {
-      return defaultDashboard;
+    // Rol ADMIN: acceso directo y exclusivo a /admin-panel
+    if (perfil.rol == UserRole.admin) {
+      if (path == '/admin-panel') return null;
+      return '/admin-panel';
     }
 
-    // Proteger panel exclusivo de admin
-    if (path == '/admin-panel' && perfil.rol != UserRole.admin) {
-      return '/dashboard-empresa';
+    // Rol CONSTRUCTORA
+    if (perfil.rol == UserRole.constructora) {
+      // Caso 1: Perfil incompleto -> Onboarding obligatorio
+      if (!perfil.isCompleted) {
+        if (path == '/complete-profile') return null;
+        return '/complete-profile';
+      }
+
+      // Caso 2: Perfil completo -> Dashboard habilitado
+      if (path == '/login' ||
+          path == '/register' ||
+          path == '/splash' ||
+          path == '/' ||
+          path == '/complete-profile') {
+        return '/dashboard-empresa';
+      }
+
+      if (path == '/admin-panel') {
+        return '/dashboard-empresa';
+      }
+
+      return null;
     }
 
     return null;
@@ -113,6 +130,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/terms',
         builder: (context, state) => const TermsScreen(),
+      ),
+      GoRoute(
+        path: '/complete-profile',
+        builder: (context, state) => const CompleteProfileScreen(),
       ),
       GoRoute(
         path: '/dashboard-empresa',

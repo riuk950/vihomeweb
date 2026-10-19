@@ -7,11 +7,20 @@ import 'package:vihomeweb/routing/app_router.dart';
 
 void main() {
   group('authRedirectLogic Guards', () {
-    const constructoraPerfil = PerfilUsuario(
+    const constructoraPerfilCompleto = PerfilUsuario(
       id: 'c-1',
       email: 'c@empresa.com',
       rol: UserRole.constructora,
       activo: true,
+      isCompleted: true,
+    );
+
+    const constructoraPerfilIncompleto = PerfilUsuario(
+      id: 'c-2',
+      email: 'nueva@empresa.com',
+      rol: UserRole.constructora,
+      activo: true,
+      isCompleted: false,
     );
 
     const adminPerfil = PerfilUsuario(
@@ -25,6 +34,14 @@ void main() {
       final redirect = authRedirectLogic(
         authState: const Unauthenticated(),
         path: '/dashboard-empresa',
+      );
+      expect(redirect, equals('/login'));
+    });
+
+    test('usuario anónimo intentando acceder a /complete-profile debe ser redirigido a /login', () {
+      final redirect = authRedirectLogic(
+        authState: const Unauthenticated(),
+        path: '/complete-profile',
       );
       expect(redirect, equals('/login'));
     });
@@ -57,26 +74,68 @@ void main() {
       expect(redirectEval, equals('/splash'));
     });
 
-    test('constructora autenticada en /login o /register debe ser redirigida a /dashboard-empresa', () {
+    test('constructora con perfil completo en /login o /register debe ser redirigida a /dashboard-empresa', () {
       final redirectLogin = authRedirectLogic(
-        authState: const Authenticated(constructoraPerfil),
+        authState: const Authenticated(constructoraPerfilCompleto),
         path: '/login',
       );
       expect(redirectLogin, equals('/dashboard-empresa'));
 
       final redirectSplash = authRedirectLogic(
-        authState: const Authenticated(constructoraPerfil),
+        authState: const Authenticated(constructoraPerfilCompleto),
         path: '/splash',
       );
       expect(redirectSplash, equals('/dashboard-empresa'));
     });
 
-    test('constructora intentando acceder a /admin-panel debe ser redirigida a /dashboard-empresa', () {
+    test('constructora con perfil completo en /complete-profile debe ser redirigida a /dashboard-empresa', () {
       final redirect = authRedirectLogic(
-        authState: const Authenticated(constructoraPerfil),
-        path: '/admin-panel',
+        authState: const Authenticated(constructoraPerfilCompleto),
+        path: '/complete-profile',
       );
       expect(redirect, equals('/dashboard-empresa'));
+    });
+
+    test('constructora con perfil incompleto debe ser forzada a /complete-profile desde cualquier ruta protegida', () {
+      final redirectDashboard = authRedirectLogic(
+        authState: const Authenticated(constructoraPerfilIncompleto),
+        path: '/dashboard-empresa',
+      );
+      expect(redirectDashboard, equals('/complete-profile'));
+
+      final redirectRoot = authRedirectLogic(
+        authState: const Authenticated(constructoraPerfilIncompleto),
+        path: '/',
+      );
+      expect(redirectRoot, equals('/complete-profile'));
+
+      final redirectLogin = authRedirectLogic(
+        authState: const Authenticated(constructoraPerfilIncompleto),
+        path: '/login',
+      );
+      expect(redirectLogin, equals('/complete-profile'));
+    });
+
+    test('constructora con perfil incompleto en /complete-profile debe permanecer en ella (null)', () {
+      final redirect = authRedirectLogic(
+        authState: const Authenticated(constructoraPerfilIncompleto),
+        path: '/complete-profile',
+      );
+      expect(redirect, isNull);
+    });
+
+    test('constructora intentando acceder a /admin-panel debe ser redirigida a su dashboard o complete-profile', () {
+      final redirectCompleto = authRedirectLogic(
+        authState: const Authenticated(constructoraPerfilCompleto),
+        path: '/admin-panel',
+      );
+      expect(redirectCompleto, equals('/dashboard-empresa'));
+
+      final redirectIncompleto = authRedirectLogic(
+        authState: const Authenticated(constructoraPerfilIncompleto),
+        path: '/admin-panel',
+      );
+      expect(redirectIncompleto, equals('/complete-profile'));
     });
 
     test('admin autenticado en /login o / debe ser redirigido a /admin-panel', () {
@@ -99,6 +158,14 @@ void main() {
         path: '/admin-panel',
       );
       expect(redirect, isNull);
+    });
+
+    test('admin accediendo a /complete-profile debe ser redirigido a /admin-panel', () {
+      final redirect = authRedirectLogic(
+        authState: const Authenticated(adminPerfil),
+        path: '/complete-profile',
+      );
+      expect(redirect, equals('/admin-panel'));
     });
 
     test('estado de error debe redirigir rutas privadas a /login', () {

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vihomeweb/core/errors/auth_failure.dart';
 import 'package:vihomeweb/data/providers/auth_providers.dart';
+import 'package:vihomeweb/domain/models/constructora_data.dart';
 import 'package:vihomeweb/domain/repositories/auth_repository.dart';
 import 'package:vihomeweb/presentation/controllers/auth_state.dart';
 
@@ -41,21 +42,27 @@ class AuthController extends Notifier<AuthState> {
   }
 
   /// Registro de constructora.
-  Future<void> register({
+  /// No autentica al usuario en el cliente: exige verificación previa de correo antes del primer login.
+  Future<bool> register({
     required String email,
     required String password,
   }) async {
     state = const AuthLoading();
     try {
-      final profile = await _repository.registerConstructora(
+      await _repository.registerConstructora(
         email: email,
         password: password,
       );
-      state = Authenticated(profile);
+      // Garantizar que no quede sesión local activa antes de verificar correo
+      await _repository.signOut();
+      state = const Unauthenticated();
+      return true;
     } on AuthFailure catch (f) {
       state = AuthErrorState(f);
+      return false;
     } catch (e) {
       state = AuthErrorState(UnexpectedAuthFailure(e.toString()));
+      return false;
     }
   }
 
@@ -86,6 +93,30 @@ class AuthController extends Notifier<AuthState> {
       await _repository.signOut();
     } finally {
       state = const Unauthenticated();
+    }
+  }
+
+  /// Completa el onboarding corporativo de la constructora.
+  Future<void> completarOnboarding(ConstructoraData data) async {
+    state = const AuthLoading();
+    try {
+      final updated = await _repository.completarOnboardingConstructora(data);
+      state = Authenticated(updated);
+    } on AuthFailure catch (f) {
+      state = AuthErrorState(f);
+    } catch (e) {
+      state = AuthErrorState(UnexpectedAuthFailure(e.toString()));
+    }
+  }
+
+  /// Reenvía el correo de confirmación de registro.
+  Future<void> reenviarConfirmacion(String email) async {
+    try {
+      await _repository.reenviarCorreoConfirmacion(email);
+    } on AuthFailure catch (f) {
+      state = AuthErrorState(f);
+    } catch (e) {
+      state = AuthErrorState(UnexpectedAuthFailure(e.toString()));
     }
   }
 

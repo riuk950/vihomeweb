@@ -1,3 +1,4 @@
+import 'package:vihomeweb/domain/models/constructora_data.dart';
 import 'package:vihomeweb/domain/models/perfil_usuario.dart';
 
 /// Contrato abstracto que desacopla la autenticación y obtención de perfiles
@@ -26,4 +27,10 @@ abstract interface class AuthRepository {
 
   /// Cierra la sesión activa en el cliente y purga el estado persistido.
   Future<void> signOut();
+
+  /// Completa el onboarding corporativo e inserta la empresa en la base de datos.
+  Future<PerfilUsuario> completarOnboardingConstructora(ConstructoraData data);
+
+  /// Reenvía el correo de activación/confirmación de cuenta.
+  Future<void> reenviarCorreoConfirmacion(String email);
 }

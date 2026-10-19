@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:vihomeweb/core/errors/auth_failure.dart';
 import 'package:vihomeweb/data/providers/auth_providers.dart';
 import 'package:vihomeweb/presentation/controllers/auth_state.dart';
 
@@ -16,11 +19,58 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
+  Timer? _cooldownTimer;
+  int _resendCooldownSeconds = 0;
+
   @override
   void dispose() {
+    _cooldownTimer?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _startCooldown() {
+    setState(() => _resendCooldownSeconds = 60);
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendCooldownSeconds > 1) {
+        setState(() => _resendCooldownSeconds--);
+      } else {
+        timer.cancel();
+        setState(() => _resendCooldownSeconds = 0);
+      }
+    });
+  }
+
+  Future<void> _resendConfirmation() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor ingresa tu correo para reenviar la confirmación.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    _startCooldown();
+    await ref.read(authControllerProvider.notifier).reenviarConfirmacion(email);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Correo de confirmación reenviado exitosamente.'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _signIn() async {
@@ -52,7 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = authState is AuthLoading || authState is AuthEvaluatingRole;
 
     ref.listen<AuthState>(authControllerProvider, (prev, next) {
-      if (next is AuthErrorState) {
+      if (next is AuthErrorState && next.failure is! EmailNotConfirmedFailure) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.failure.message),
@@ -154,6 +204,69 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
+                    if (authState is AuthErrorState &&
+                        authState.failure is EmailNotConfirmedFailure) ...[
+                      Container(
+                        key: const Key('email_not_confirmed_banner'),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFDAD6),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFFBA1A1A),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.mark_email_unread_outlined,
+                                  color: Color(0xFFBA1A1A),
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    authState.failure.message,
+                                    style: const TextStyle(
+                                      color: Color(0xFF93000A),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                key: const Key('resend_confirmation_button'),
+                                onPressed: _resendCooldownSeconds > 0
+                                    ? null
+                                    : _resendConfirmation,
+                                icon: const Icon(Icons.send_rounded, size: 16),
+                                label: Text(
+                                  _resendCooldownSeconds > 0
+                                      ? 'Reenviar en ${_resendCooldownSeconds}s'
+                                      : 'Reenviar confirmación',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                     // Email Field
                     TextField(
                       controller: _emailController,

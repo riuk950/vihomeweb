@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vihomeweb/core/errors/auth_failure.dart';
 import 'package:vihomeweb/data/providers/auth_providers.dart';
+import 'package:vihomeweb/domain/models/constructora_data.dart';
 import 'package:vihomeweb/domain/models/perfil_usuario.dart';
 import 'package:vihomeweb/domain/models/user_role.dart';
 import 'package:vihomeweb/presentation/controllers/auth_controller.dart';
@@ -51,25 +52,27 @@ void main() {
       expect(auth.perfil.rol, equals(UserRole.admin));
     });
 
-    test('register debe emitir Authenticated si el registro es exitoso', () async {
-      await controller().register(
+    test('register debe retornar true, cerrar sesión local y permanecer en Unauthenticated para requerir confirmación', () async {
+      final success = await controller().register(
         email: 'nueva@constructora.com',
         password: 'password123',
       );
 
-      expect(currentState(), isA<Authenticated>());
-      final auth = currentState() as Authenticated;
-      expect(auth.perfil.rol, equals(UserRole.constructora));
+      expect(success, isTrue);
+      expect(fakeRepo.registerCallCount, equals(1));
+      expect(fakeRepo.signOutCallCount, greaterThanOrEqualTo(1));
+      expect(currentState(), isA<Unauthenticated>());
     });
 
-    test('register debe emitir AuthErrorState ante fallo', () async {
+    test('register debe retornar false y emitir AuthErrorState ante fallo', () async {
       fakeRepo.failureToThrow = const UserAlreadyExistsFailure();
 
-      await controller().register(
+      final success = await controller().register(
         email: 'existente@constructora.com',
         password: 'password123',
       );
 
+      expect(success, isFalse);
       expect(currentState(), isA<AuthErrorState>());
       final errorState = currentState() as AuthErrorState;
       expect(errorState.failure, isA<UserAlreadyExistsFailure>());
@@ -146,6 +149,87 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(currentState(), isA<Unauthenticated>());
       expect(fakeRepo.signOutCallCount, equals(1));
+    });
+
+    test('login debe emitir AuthErrorState con EmailNotConfirmedFailure si el correo no está verificado', () async {
+      fakeRepo.failureToThrow = const EmailNotConfirmedFailure();
+
+      await controller().login(
+        email: 'sinconfirmar@constructora.com',
+        password: 'password123',
+      );
+
+      expect(currentState(), isA<AuthErrorState>());
+      final errorState = currentState() as AuthErrorState;
+      expect(errorState.failure, isA<EmailNotConfirmedFailure>());
+      expect(
+        errorState.failure.message,
+        contains('Debes confirmar tu correo electrónico antes de iniciar sesión'),
+      );
+    });
+
+    test('completarOnboarding debe emitir Authenticated con isCompleted == true', () async {
+      fakeRepo.emitUser(
+        const PerfilUsuario(
+          id: 'const-1',
+          email: 'empresa@constructora.com',
+          rol: UserRole.constructora,
+          activo: true,
+          isCompleted: false,
+        ),
+      );
+
+      const data = ConstructoraData(
+        nit: '900123456-1',
+        nombre: 'Constructora Bolívar SAS',
+        telefono: '3001234567',
+        direccion: 'Calle 100 # 15-20',
+      );
+
+      await controller().completarOnboarding(data);
+
+      expect(currentState(), isA<Authenticated>());
+      final auth = currentState() as Authenticated;
+      expect(auth.perfil.isCompleted, isTrue);
+      expect(fakeRepo.completarOnboardingCallCount, equals(1));
+    });
+
+    test('completarOnboarding debe emitir AuthErrorState con ConstructoraAlreadyExistsFailure si NIT ya existe', () async {
+      fakeRepo.failureToThrow = const ConstructoraAlreadyExistsFailure();
+
+      const data = ConstructoraData(
+        nit: '900123456-1',
+        nombre: 'Constructora Repetida',
+        telefono: '3001234567',
+        direccion: 'Calle 100 # 15-20',
+      );
+
+      await controller().completarOnboarding(data);
+
+      expect(currentState(), isA<AuthErrorState>());
+      final errorState = currentState() as AuthErrorState;
+      expect(errorState.failure, isA<ConstructoraAlreadyExistsFailure>());
+      expect(
+        errorState.failure.message,
+        contains('Ya existe una constructora registrada con este NIT'),
+      );
+    });
+
+    test('reenviarConfirmacion debe invocar al repositorio con el email especificado', () async {
+      await controller().reenviarConfirmacion('empresa@constructora.com');
+
+      expect(fakeRepo.resendEmailCallCount, equals(1));
+      expect(fakeRepo.lastResentEmail, equals('empresa@constructora.com'));
+    });
+
+    test('reenviarConfirmacion debe emitir AuthErrorState ante falla en el repositorio', () async {
+      fakeRepo.failureToThrow = const UnexpectedAuthFailure('Error temporal del servidor');
+
+      await controller().reenviarConfirmacion('empresa@constructora.com');
+
+      expect(currentState(), isA<AuthErrorState>());
+      final errorState = currentState() as AuthErrorState;
+      expect(errorState.failure.message, equals('Error temporal del servidor'));
     });
   });
 }

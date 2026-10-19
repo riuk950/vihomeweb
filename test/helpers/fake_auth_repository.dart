@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:vihomeweb/core/errors/auth_failure.dart';
+import 'package:vihomeweb/domain/models/constructora_data.dart';
 import 'package:vihomeweb/domain/models/perfil_usuario.dart';
 import 'package:vihomeweb/domain/models/user_role.dart';
 import 'package:vihomeweb/domain/repositories/auth_repository.dart';
@@ -19,6 +20,10 @@ class FakeAuthRepository implements AuthRepository {
   int signInCallCount = 0;
   int registerCallCount = 0;
   int signOutCallCount = 0;
+  int completarOnboardingCallCount = 0;
+  int resendEmailCallCount = 0;
+  String? lastResentEmail;
+  ConstructoraData? lastConstructoraData;
 
   FakeAuthRepository({PerfilUsuario? initialUser}) : _currentUser = initialUser;
 
@@ -88,6 +93,35 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> signOut() async {
     signOutCallCount++;
     emitUser(null);
+  }
+
+  @override
+  Future<PerfilUsuario> completarOnboardingConstructora(ConstructoraData data) async {
+    completarOnboardingCallCount++;
+    lastConstructoraData = data;
+    if (failureToThrow != null) {
+      throw failureToThrow!;
+    }
+    final current = _currentUser ??
+        PerfilUsuario(
+          id: 'fake-onboarding-id',
+          email: 'empresa@test.com',
+          rol: UserRole.constructora,
+          activo: true,
+          createdAt: DateTime.now(),
+        );
+    final updated = current.copyWith(isCompleted: true);
+    emitUser(updated);
+    return updated;
+  }
+
+  @override
+  Future<void> reenviarCorreoConfirmacion(String email) async {
+    resendEmailCallCount++;
+    lastResentEmail = email;
+    if (failureToThrow != null) {
+      throw failureToThrow!;
+    }
   }
 
   void dispose() {

@@ -67,6 +67,29 @@ void main() {
       expect(jsonOutput['email'], equals('test@constructora.com'));
       expect(jsonOutput['rol'], equals('CONSTRUCTORA'));
       expect(jsonOutput['activo'], isTrue);
+      expect(jsonOutput['is_completed'], isFalse);
+    });
+
+    test('isCompleted debe ser false por defecto si no está en el JSON', () {
+      final perfil = PerfilUsuario.fromJson(sampleJson);
+      expect(perfil.isCompleted, isFalse);
+    });
+
+    test('isCompleted debe deserializarse correctamente cuando sea true', () {
+      final jsonCompleto = Map<String, dynamic>.from(sampleJson)..['is_completed'] = true;
+      final perfil = PerfilUsuario.fromJson(jsonCompleto);
+      expect(perfil.isCompleted, isTrue);
+    });
+
+    test('copyWith debe permitir actualizar isCompleted preservando otros campos', () {
+      final perfil = PerfilUsuario.fromJson(sampleJson);
+      final actualizado = perfil.copyWith(isCompleted: true);
+
+      expect(actualizado.id, equals(perfil.id));
+      expect(actualizado.email, equals(perfil.email));
+      expect(actualizado.rol, equals(perfil.rol));
+      expect(actualizado.activo, equals(perfil.activo));
+      expect(actualizado.isCompleted, isTrue);
     });
   });
 }

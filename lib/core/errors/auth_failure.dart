@@ -45,3 +45,16 @@ final class UnexpectedAuthFailure extends AuthFailure {
     super.message = 'Ocurrió un error inesperado al procesar la solicitud.',
   ]);
 }
+
+final class EmailNotConfirmedFailure extends AuthFailure {
+  const EmailNotConfirmedFailure([
+    super.message =
+        'Debes confirmar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada o carpeta de spam.',
+  ]);
+}
+
+final class ConstructoraAlreadyExistsFailure extends AuthFailure {
+  const ConstructoraAlreadyExistsFailure([
+    super.message = 'Ya existe una constructora registrada con este NIT.',
+  ]);
+}

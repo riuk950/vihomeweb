@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vihomeweb/data/providers/auth_providers.dart';
 import 'package:vihomeweb/domain/models/perfil_usuario.dart';
 import 'package:vihomeweb/domain/models/user_role.dart';
+import 'package:vihomeweb/presentation/screens/complete_profile_screen.dart';
 import 'package:vihomeweb/presentation/screens/dashboard_screen.dart';
 import 'package:vihomeweb/presentation/screens/login_screen.dart';
 import 'package:vihomeweb/presentation/screens/splash_loading_screen.dart';
@@ -62,7 +63,7 @@ void main() {
       expect(find.byType(SplashLoadingScreen), findsNothing);
     });
 
-    testWidgets('arranque con sesión de constructora activa debe redirigir a /dashboard-empresa', (tester) async {
+    testWidgets('arranque con sesión de constructora activa y perfil completo debe redirigir a /dashboard-empresa', (tester) async {
       configureDesktopSize(tester);
 
       fakeRepo.emitUser(
@@ -71,6 +72,7 @@ void main() {
           email: 'admin@constructora.com',
           rol: UserRole.constructora,
           activo: true,
+          isCompleted: true,
         ),
       );
 
@@ -94,6 +96,41 @@ void main() {
 
       expect(find.byType(DashboardScreen), findsOneWidget);
       expect(find.byType(SplashLoadingScreen), findsNothing);
+    });
+
+    testWidgets('arranque con constructora sin completar perfil debe redirigir a /complete-profile', (tester) async {
+      configureDesktopSize(tester);
+
+      fakeRepo.emitUser(
+        const PerfilUsuario(
+          id: 'constructora-incompleta',
+          email: 'nueva@constructora.com',
+          rol: UserRole.constructora,
+          activo: true,
+          isCompleted: false,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authRepositoryProvider.overrideWithValue(fakeRepo),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              final router = ref.watch(routerProvider);
+              return MaterialApp.router(
+                routerConfig: router,
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CompleteProfileScreen), findsOneWidget);
+      expect(find.byType(DashboardScreen), findsNothing);
     });
 
     testWidgets('arranque con rol CLIENTE debe revocar sesión y redirigir a /login', (tester) async {

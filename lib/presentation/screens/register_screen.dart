@@ -60,10 +60,65 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
-    await ref.read(authControllerProvider.notifier).register(
+    final success = await ref.read(authControllerProvider.notifier).register(
       email: email,
       password: password,
     );
+
+    if (success && mounted) {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(
+                Icons.mark_email_read_outlined,
+                color: Color(0xFF003760),
+                size: 28,
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Verifica tu correo',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Color(0xFF003760),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Hemos enviado un enlace de confirmación a $email.\n\nPor favor revisa tu bandeja de entrada o spam y confirma tu correo antes de iniciar sesión.',
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.4,
+              color: Color(0xFF42474F),
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              key: const Key('go_to_login_button'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                context.go('/login');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF003760),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Ir a Iniciar Sesión'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -220,8 +275,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         const Text('¿Ya tienes una cuenta?'),
                         TextButton(
